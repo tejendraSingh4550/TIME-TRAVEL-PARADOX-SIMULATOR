@@ -1,0 +1,12 @@
+package com.timetravel;
+import com.timetravel.engine.*;import com.timetravel.model.*;import com.timetravel.service.*;import org.junit.jupiter.api.Test;import org.junit.jupiter.api.io.TempDir;import java.nio.file.Path;import static org.junit.jupiter.api.Assertions.*;
+class SimulationTest {
+ @TempDir Path temp;
+ @Test void createsRootAndBranchesWithoutChangingParent(){SimulationService s=new SimulationService();s.start(4);Timeline root=s.state().current();Timeline child=s.branch();assertEquals("T-001",child.parentId());assertEquals(2,s.state().timelines().size());assertEquals(11,root.events().size());}
+ @Test void validatesTravelAndAccountsEnergy(){SimulationService s=new SimulationService();s.start(4);assertThrows(IllegalArgumentException.class,()->s.travel(2051));assertTrue(s.travel(2020).contains("Backward"));assertEquals(1,s.state().stats().timeTravels());assertTrue(s.state().temporalEnergy()<100);}
+ @Test void consequenceEngineProducesLinkedEffects(){Event e=EventCatalog.defaultEvents().stream().filter(x->x.id().equals("EV-08")).findFirst().orElseThrow();var result=new ConsequenceEngine().calculate(e,ModificationType.ACCELERATE);assertTrue(result.size()>=4);assertTrue(result.stream().anyMatch(x->x.depth()==2));}
+ @Test void paradoxAnalysisClassifiesDanger(){SimulationService s=new SimulationService();s.start(7);Timeline t=s.state().current();t.paradox(75);assertEquals(TimelineStatus.UNSTABLE,s.analyze().status());t.paradox(95);assertEquals(TimelineStatus.COLLAPSED,s.analyze().status());}
+ @Test void modificationCreatesBranchAndComparisonShowsDelta(){SimulationService s=new SimulationService();s.start(1);s.travel(2032);s.modify("EV-08",ModificationType.ACCELERATE,3);assertEquals("T-002",s.state().current().id());assertEquals("T-001",s.state().current().parentId());assertNotEquals(0,SimulationService.compare(s.state().timelines().get("T-001"),s.state().current()).get("Economy"));}
+ @Test void saveLoadPreservesSimulation()throws Exception{SimulationService s=new SimulationService();s.start(44);s.travel(2020);SaveLoadService io=new SaveLoadService(temp);io.save(s.state(),"roundtrip");SimulationState copy=io.load("roundtrip");assertEquals("T-001",copy.currentTimelineId());assertEquals(1,copy.stats().timeTravels());assertEquals(s.state().temporalEnergy(),copy.temporalEnergy());}
+ @Test void achievementsUnlockOnFirstJump(){SimulationService s=new SimulationService();s.start(5);s.travel(2025);assertTrue(new AchievementService().update(s.state()).contains("FIRST JUMP"));}
+}

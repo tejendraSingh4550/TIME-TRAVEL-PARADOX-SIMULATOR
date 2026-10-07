@@ -1,0 +1,9 @@
+target/
+.m2repo/
+.mvn-settings.xml
+*.class
+*.ser
+.idea/
+.vscode/
+*.iml
+.DS_Store

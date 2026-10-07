@@ -1,0 +1,7 @@
+package com.timetravel.engine;
+import com.timetravel.model.*; import java.util.*;
+public final class RandomEventEngine {
+    public record RandomOccurrence(String title,String description,int energyChange,int paradoxChange){}
+    private static final List<RandomOccurrence> EVENTS=List.of(new RandomOccurrence("Unexpected discovery","A remote observatory detects a useful signal.",5,0),new RandomOccurrence("Temporal storm","A brief chronal surge disrupts the jump field.",-8,4),new RandomOccurrence("Unknown traveler","A traveler leaves a warning about a fragile branch.",0,5),new RandomOccurrence("Quiet passage","The timeline absorbs the jump with little resistance.",3,0));
+    public Optional<RandomOccurrence> roll(SimulationState s){Random random=new Random(s.seed()^((long)s.stats().timeTravels()*0x9E3779B97F4A7C15L)^s.current().changes().size());if(random.nextInt(100)>=22)return Optional.empty();RandomOccurrence e=EVENTS.get(random.nextInt(EVENTS.size()));s.temporalEnergy(s.temporalEnergy()+e.energyChange());Timeline t=s.current();TimelineStatus previous=t.status();t.paradox(t.paradox()+e.paradoxChange());t.stability(Math.max(0,100-t.paradox()*.65));if(t.paradox()>=90)t.status(TimelineStatus.COLLAPSED);else if(t.paradox()>=70)t.status(TimelineStatus.UNSTABLE);s.stats().recordParadox(t.paradox());if(t.status()==TimelineStatus.COLLAPSED&&previous!=TimelineStatus.COLLAPSED)s.stats().collapsed();return Optional.of(e);}
+}
